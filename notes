@@ -1,0 +1,9 @@
+you have to store the salt not securely, salt dictionary key can just be key
+same password and same salt generate the same key
+you have to store something about the password securely
+encrypting whole dictionary
+
+key can be locally stored
+padding must be used
+can store something derrived from the password
+hamac for swap attacks
