@@ -1,7 +1,12 @@
-import pickle
+import pickle, os
+from cryptography.hazmat.primitives.ciphers.aead import AESGCM
+from cryptography.hazmat.primitives import hashes, hmac
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.hazmat.backends import default_backend
 
 class PrivNotes:
-  MAX_NOTE_LEN = 2048;
+  MAX_NOTE_LEN = 2048
+  NONCE_COUNTER = 69
 
   def __init__(self, password, data = None, checksum = None):
     """Constructor.
@@ -19,7 +24,17 @@ class PrivNotes:
     """
     self.kvs = {}
     if data is not None:
+      #
       self.kvs = pickle.loads(bytes.fromhex(data))
+    else:
+
+      self.salt = os.urandom(16)
+      kdf = PBKDF2HMAC(algorithm = hashes.SHA256(), length = 32, salt = self.salt,iterations = 2000000, backend = default_backend())
+      self.key = kdf.derive(bytes(password, "ascii"))
+      h = hmac.HMAC(self.key, hashes.SHA256())
+      h.update(bytes("Jessica is cool", "ascii"))
+      self.signature = h.finalize()
+      print(self.signature)
 
   def dump(self):
     """Computes a serialized representation of the notes database
@@ -62,10 +77,18 @@ class PrivNotes:
        Raises:
          ValueError : if note length exceeds the maximum
     """
+
     if len(note) > self.MAX_NOTE_LEN:
       raise ValueError('Maximum note length exceeded')
     
-    self.kvs[title] = note
+    #need to create new key not use self
+    h = hmac.HMAC(self.key, hashes.SHA256())
+    h.update(bytes(title, "ascii"))
+
+
+    e_title = h.finalize()
+    
+    self.kvs[e_title] = note
 
 
   def remove(self, title):
