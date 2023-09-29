@@ -62,7 +62,7 @@ class PrivNotes:
       return self.kvs[title]
     return None
 
-  def set(self, title, note):
+  def set(self, title:str, note: str):
     """Associates a note with a title and adds it to the database
        (or updates the associated note if the title is already
        present in the database).
@@ -81,14 +81,47 @@ class PrivNotes:
     if len(note) > self.MAX_NOTE_LEN:
       raise ValueError('Maximum note length exceeded')
     
-    #need to create new key not use self
-    h = hmac.HMAC(self.key, hashes.SHA256())
+    #Key derivation for title encryption
+    title_hmac = hmac.HMAC(self.key, hashes.SHA256())
+    title_hmac.update(bytes("Title Hash", "ascii"))
+    new_key_title = title_hmac.finalize()
+
+    #Title encryption
+    h = hmac.HMAC(new_key_title, hashes.SHA256())
     h.update(bytes(title, "ascii"))
-
-
     e_title = h.finalize()
+
+    #Length Key Gen and Encryption
+    length_hmac = hmac.HMAC(self.key, hashes.SHA256())
+    length_hmac.update(bytes("Length hash", "ascii"))
+    new_key_length = length_hmac.finalize()
+
+    l = hmac.HMAC(new_key_length, hashes.SHA256())
+    l.update(bytes(len(note), "ascii"))
+    e_length = l.finalize()
+
+    #Padding
+    padded_note = note.ljust(self.MAX_NOTE_LEN, "0")
     
-    self.kvs[e_title] = note
+    
+    #Key derivation for note encryption
+    note_hmac = hmac.HMAC(self.key, hashes.SHA256())
+    note_hmac.update(bytes("Note AES Hash", "ascii"))
+    new_key_note = note_hmac.finalize()
+
+    #Note encryption
+    a = AESGCM(new_key_note)
+    e_note = a.encrypt(nonce=self.NONCE_COUNTER, data=padded_note, associated_data=title)
+    
+    self.NONCE_COUNTER += 1
+
+    #Storage of encrypted note and key 
+    self.kvs[e_title] = e_note + e_length #is it possible that this reveals info about the length of the length ??
+
+    
+
+
+
 
 
   def remove(self, title):

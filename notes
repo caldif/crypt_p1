@@ -10,3 +10,14 @@ hamac for swap attacks
 
 k <-gen(password, SALT, etc)>
 HMAC(k, "dummy")
+
+
+
+How to decrypt: 
+- Decrypt title with HMAC, use the HMAC key derived from the main key 
+
+- grab the note up until MAX_NOTE_LEN
+- decrypt what's left with HMAC, use a new key derived from the main key (?)
+- that should give you the length
+- decrypt the first chunk with AESGCM (use associated data)
+- now you read the decryption up until the length 
