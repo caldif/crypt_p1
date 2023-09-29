@@ -7,3 +7,6 @@ key can be locally stored
 padding must be used
 can store something derrived from the password
 hamac for swap attacks
+
+k <-gen(password, SALT, etc)>
+HMAC(k, "dummy")
