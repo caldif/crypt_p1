@@ -6,7 +6,7 @@ from cryptography.hazmat.backends import default_backend
 
 class PrivNotes:
   MAX_NOTE_LEN = 2048
-  NONCE_COUNTER = 69
+  NONCE_COUNTER = 2**64 #8 bytes hehe
 
   def __init__(self, password, data = None, checksum = None):
     """Constructor.
@@ -130,14 +130,14 @@ class PrivNotes:
 
     #Note encryption
     a = AESGCM(new_key_note)
-    e_note = a.encrypt(nonce=self.NONCE_COUNTER, data=padded_note, associated_data=title)
+    e_note = a.encrypt(nonce=bytes(str(self.NONCE_COUNTER), "ascii"), data=bytes(padded_note, "ascii"), associated_data=bytes(title, "ascii")) #can we put in the title 
     
     self.NONCE_COUNTER += 1
 
     #Storage of encrypted note and key 
     self.kvs[e_title] = e_note + e_length #is it possible that this reveals info about the length of the length ??
 
-    
+
 
 
 
