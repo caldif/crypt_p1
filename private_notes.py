@@ -68,16 +68,21 @@ class PrivNotes:
     e_passed_title = h.finalize()
 
     if e_passed_title in self.kvs:
-      # enc_text = self.kvs[e_passed_title]
-      # length = enc_text[self.MAX_NOTE_LEN:]
+      enc_text = self.kvs[e_passed_title]
+      length = enc_text[self.MAX_NOTE_LEN:]
 
-      # #Length Key Gen and Encryption
-      # length_hmac = hmac.HMAC(self.key, hashes.SHA256())
-      # length_hmac.update(bytes("Length hash", "ascii"))
-      # old_key_length = length_hmac.finalize()
+      #Length Key Gen and Encryption
+      length_hmac = hmac.HMAC(self.key, hashes.SHA256())
+      length_hmac.update(bytes("Length hash", "ascii"))
+      old_key_length = length_hmac.finalize()
       print("found title")
 
-      hmac.HMAC.verify
+      l = AESGCM(old_key_length)
+      d_length = l.decrypt(nonce=bytes(str(self.NONCE_COUNTER), "ascii"), data=length, associated_data=None)
+      self.NONCE_COUNTER += 1
+
+      print(d_length)
+
 
     return None
 
@@ -115,9 +120,13 @@ class PrivNotes:
     length_hmac.update(bytes("Length hash", "ascii"))
     new_key_length = length_hmac.finalize()
 
-    l = hmac.HMAC(new_key_length, hashes.SHA256())
-    l.update(bytes(str(len(note)), "ascii"))
-    e_length = l.finalize()
+    # l = hmac.HMAC(new_key_length, hashes.SHA256())
+    # l.update(bytes(str(len(note)), "ascii"))
+    # e_length = l.finalize()
+    l = AESGCM(new_key_length)
+    e_length = l.encrypt(nonce=bytes(str(self.NONCE_COUNTER), "ascii"), data=bytes(str(len(note)), "ascii"), associated_data=None)
+    self.NONCE_COUNTER += 1
+
 
     #Padding
     padded_note = note.ljust(self.MAX_NOTE_LEN, "0")
