@@ -77,11 +77,11 @@ class PrivNotes:
       old_key_length = length_hmac.finalize()
       print("found title")
 
-      l = AESGCM(old_key_length)
-      d_length = l.decrypt(nonce=bytes(str(self.NONCE_COUNTER), "ascii"), data=length, associated_data=None)
-      self.NONCE_COUNTER += 1
+      #l = AESGCM(old_key_length)
+      #d_length = l.decrypt(nonce=bytes(str(self.NONCE_COUNTER), "ascii"), data=length, associated_data=None)
+      #self.NONCE_COUNTER += 1
 
-      print(d_length)
+      #print(d_length)
 
 
     return None
@@ -162,8 +162,18 @@ class PrivNotes:
          success (bool) : True if the title was removed and False if the title was
                           not found
     """
-    if title in self.kvs:
-      del self.kvs[title]
+    #Key derivation for passed title encryption
+    passed_title_hmac = hmac.HMAC(self.key, hashes.SHA256())
+    passed_title_hmac.update(bytes("Title Hash", "ascii"))
+    check_title = passed_title_hmac.finalize()
+
+    #Title encryption
+    h = hmac.HMAC(check_title, hashes.SHA256())
+    h.update(bytes(title, "ascii"))
+    e_passed_title = h.finalize()
+
+    if e_passed_title in self.kvs:
+      del self.kvs[e_passed_title]
       return True
 
     return False
