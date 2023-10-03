@@ -34,7 +34,6 @@ class PrivNotes:
       h = hmac.HMAC(self.key, hashes.SHA256())
       h.update(bytes("Jessica is cool", "ascii"))
       self.signature = h.finalize()
-      print(self.signature)
 
   def dump(self):
     """Computes a serialized representation of the notes database
@@ -58,8 +57,28 @@ class PrivNotes:
       note (str) : the note associated with the requested title if
                        it exists and otherwise None
     """
-    if title in self.kvs:
-      return self.kvs[title]
+    #Key derivation for passed title encryption
+    passed_title_hmac = hmac.HMAC(self.key, hashes.SHA256())
+    passed_title_hmac.update(bytes("Title Hash", "ascii"))
+    check_title = passed_title_hmac.finalize()
+
+    #Title encryption
+    h = hmac.HMAC(check_title, hashes.SHA256())
+    h.update(bytes(title, "ascii"))
+    e_passed_title = h.finalize()
+
+    if e_passed_title in self.kvs:
+      # enc_text = self.kvs[e_passed_title]
+      # length = enc_text[self.MAX_NOTE_LEN:]
+
+      # #Length Key Gen and Encryption
+      # length_hmac = hmac.HMAC(self.key, hashes.SHA256())
+      # length_hmac.update(bytes("Length hash", "ascii"))
+      # old_key_length = length_hmac.finalize()
+      print("found title")
+
+      hmac.HMAC.verify
+
     return None
 
   def set(self, title:str, note: str):
@@ -97,7 +116,7 @@ class PrivNotes:
     new_key_length = length_hmac.finalize()
 
     l = hmac.HMAC(new_key_length, hashes.SHA256())
-    l.update(bytes(len(note), "ascii"))
+    l.update(bytes(str(len(note)), "ascii"))
     e_length = l.finalize()
 
     #Padding
