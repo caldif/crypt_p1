@@ -24,7 +24,7 @@ class PrivNotes:
     """
     self.kvs= {}
     if data is not None:
-      #
+      #going to have to slice data? depends on how structure dump
       self.kvs = pickle.loads(bytes.fromhex(data))
     else:
 
@@ -46,7 +46,8 @@ class PrivNotes:
                        against rollback attacks (up to 32 characters in length)
 
     """
-
+    #data is going to have to be signature||kvs
+    #might have to pad sig to standard length?
     return pickle.dumps(self.kvs).hex(), ''
 
   def get(self, title):
