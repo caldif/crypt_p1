@@ -64,7 +64,7 @@ class PrivNotes:
     passed_title_hmac.update(bytes("Title Hash", "ascii"))
     check_title = passed_title_hmac.finalize()
 
-    #Title encryption
+    #New Title encryption
     h = hmac.HMAC(check_title, hashes.SHA256())
     h.update(bytes(title, "ascii"))
     e_passed_title = h.finalize()
@@ -77,16 +77,24 @@ class PrivNotes:
       length_hmac = hmac.HMAC(self.key, hashes.SHA256())
       length_hmac.update(bytes("Length hash", "ascii"))
       old_key_length = length_hmac.finalize()
-      print("found title")
 
+      #length decryption
       l = AESGCM(old_key_length)
       d_length = l.decrypt(nonce=bytes(str(length_nonce), "ascii"), data=e_length, associated_data=None)
 
-      print(int(d_length))
+      #Note Key Gen and Encryption
+      note_hmac = hmac.HMAC(self.key, hashes.SHA256())
+      note_hmac.update(bytes("Note AES Hash", "ascii"))
+      old_note_key = note_hmac.finalize()
 
-      #print(d_length)
+      #note decryption
+      n = AESGCM(old_note_key)
+      d_note = n.decrypt(nonce=bytes(str(note_nonce), "ascii"), data=e_note, associated_data=bytes(title, "ascii"))
 
-
+      #return note
+      return str(d_note[:int(d_length)], encoding='utf-8')
+    
+    #returns none if title is not in kvs
     return None
 
   def set(self, title:str, note: str):
@@ -130,7 +138,6 @@ class PrivNotes:
     l = AESGCM(new_key_length)
     padded_length = str(len(note)).rjust(4, "0")
     e_length = l.encrypt(nonce=bytes(str(self.NONCE_COUNTER), "ascii"), data=bytes(padded_length, "ascii"), associated_data=None) 
-    
     e_length = e_length
     length_nonce = self.NONCE_COUNTER
     self.NONCE_COUNTER += 1
