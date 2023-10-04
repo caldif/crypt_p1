@@ -69,7 +69,7 @@ class PrivNotes:
 
     if e_passed_title in self.kvs:
       enc_text = self.kvs[e_passed_title]
-      length = enc_text[self.MAX_NOTE_LEN:]
+      note , length = enc_text[self.MAX_NOTE_LEN]
 
       #Length Key Gen and Encryption
       length_hmac = hmac.HMAC(self.key, hashes.SHA256())
@@ -125,8 +125,9 @@ class PrivNotes:
     # e_length = l.finalize()
     l = AESGCM(new_key_length)
     e_length = l.encrypt(nonce=bytes(str(self.NONCE_COUNTER), "ascii"), data=bytes(str(len(note)), "ascii"), associated_data=None)
+    length_nonce = self.NONCE_COUNTER
     self.NONCE_COUNTER += 1
-
+    
 
     #Padding
     padded_note = note.ljust(self.MAX_NOTE_LEN, "0")
@@ -140,11 +141,11 @@ class PrivNotes:
     #Note encryption
     a = AESGCM(new_key_note)
     e_note = a.encrypt(nonce=bytes(str(self.NONCE_COUNTER), "ascii"), data=bytes(padded_note, "ascii"), associated_data=bytes(title, "ascii")) #can we put in the title 
-    
+    note_nonce = self.NONCE_COUNTER
     self.NONCE_COUNTER += 1
 
     #Storage of encrypted note and key 
-    self.kvs[e_title] = e_note + e_length #is it possible that this reveals info about the length of the length ??
+    self.kvs[e_title] = tuple(e_note + note_nonce, e_length + length_nonce) #is it possible that this reveals info about the length of the length ??
 
 
 
