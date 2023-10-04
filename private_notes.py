@@ -22,7 +22,7 @@ class PrivNotes:
     Raises:
       ValueError : malformed serialized format
     """
-    self.kvs = {}
+    self.kvs= {}
     if data is not None:
       #
       self.kvs = pickle.loads(bytes.fromhex(data))
@@ -44,7 +44,9 @@ class PrivNotes:
                    database (that can be passed to the constructor)
       checksum (str) : a hex-encoded checksum for the data used to protect
                        against rollback attacks (up to 32 characters in length)
+
     """
+
     return pickle.dumps(self.kvs).hex(), ''
 
   def get(self, title):
@@ -69,7 +71,7 @@ class PrivNotes:
 
     if e_passed_title in self.kvs:
       enc_text = self.kvs[e_passed_title]
-      note , length = enc_text[self.MAX_NOTE_LEN]
+      e_note , note_nonce, e_length, length_nonce = enc_text
 
       #Length Key Gen and Encryption
       length_hmac = hmac.HMAC(self.key, hashes.SHA256())
@@ -77,9 +79,10 @@ class PrivNotes:
       old_key_length = length_hmac.finalize()
       print("found title")
 
-      #l = AESGCM(old_key_length)
-      #d_length = l.decrypt(nonce=bytes(str(self.NONCE_COUNTER), "ascii"), data=length, associated_data=None)
-      #self.NONCE_COUNTER += 1
+      l = AESGCM(old_key_length)
+      d_length = l.decrypt(nonce=bytes(str(length_nonce), "ascii"), data=e_length, associated_data=None)
+
+      print(int(d_length))
 
       #print(d_length)
 
@@ -123,14 +126,18 @@ class PrivNotes:
     # l = hmac.HMAC(new_key_length, hashes.SHA256())
     # l.update(bytes(str(len(note)), "ascii"))
     # e_length = l.finalize()
+    #append nonce to the end 
     l = AESGCM(new_key_length)
-    e_length = l.encrypt(nonce=bytes(str(self.NONCE_COUNTER), "ascii"), data=bytes(str(len(note)), "ascii"), associated_data=None)
+    padded_length = str(len(note)).rjust(4, "0")
+    e_length = l.encrypt(nonce=bytes(str(self.NONCE_COUNTER), "ascii"), data=bytes(padded_length, "ascii"), associated_data=None) 
+    
+    e_length = e_length
     length_nonce = self.NONCE_COUNTER
     self.NONCE_COUNTER += 1
     
 
-    #Padding
-    padded_note = note.ljust(self.MAX_NOTE_LEN, "0")
+    #Padding (converting 2048 bytes to bits)
+    padded_note = note.ljust((self.MAX_NOTE_LEN)*8, "0")
     
     
     #Key derivation for note encryption
@@ -145,7 +152,7 @@ class PrivNotes:
     self.NONCE_COUNTER += 1
 
     #Storage of encrypted note and key 
-    self.kvs[e_title] = tuple(e_note + note_nonce, e_length + length_nonce) #is it possible that this reveals info about the length of the length ??
+    self.kvs[e_title] = (e_note, note_nonce, e_length, length_nonce)#is it possible that this reveals info about the length of the length YES SO I FIXED IT??
 
 
 
