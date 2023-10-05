@@ -25,12 +25,28 @@ class PrivNotes:
     """
     self.kvs= {}
     if data is not None:
-      #going to have to slice data? depends on how structure dump
       data_tuple = pickle.loads(bytes.fromhex(data))
       self.salt, self.signature, self.kvs = data_tuple
-      print(self.salt)
-      print(self.signature)
-      print(self.kvs)
+      kdf = PBKDF2HMAC(algorithm = hashes.SHA256(), length = 32, salt = self.salt,iterations = 2000000, backend = default_backend())
+      self.key = kdf.derive(bytes(password, "ascii"))
+      h = hmac.HMAC(self.key, hashes.SHA256())
+      h.update(bytes("Jessica is cool", "ascii"))
+      new_signature = h.finalize()
+      if self.signature != new_signature:
+        raise ValueError
+      
+      if checksum is not None:
+        hmac_checksum_key = hmac.HMAC(self.key, hashes.SHA256())
+        hmac_checksum_key.update(bytes("checksum key", "ascii"))
+        checksum_key = hmac_checksum_key.finalize()
+
+        hmac_checksum = hmac.HMAC(checksum_key, hashes.SHA256())
+        hmac_checksum.update(bytes(data, "ascii"))
+        test_checksum = hmac_checksum.finalize()
+        if test_checksum != checksum:
+            raise ValueError
+
+      
     else:
 
       self.salt = os.urandom(16)
@@ -53,14 +69,18 @@ class PrivNotes:
     """
     #data is going to have to be signature||kvs
     #might have to pad sig to standard length?
-    result = tuple(self.salt, self.signature, self.kvs)
+    result = (self.salt, self.signature, self.kvs)
     serialized = pickle.dumps(result).hex()
 
-    hmac_checksum = hmac.HMAC(self.key, hashes.SHA256())
+    hmac_checksum_key = hmac.HMAC(self.key, hashes.SHA256())
+    hmac_checksum_key.update(bytes("checksum key", "ascii"))
+    checksum_key = hmac_checksum_key.finalize()
+
+    hmac_checksum = hmac.HMAC(checksum_key, hashes.SHA256())
     hmac_checksum.update(bytes(serialized, "ascii"))
     checksum = hmac_checksum.finalize()
 
-    return serialized,checksum
+    return serialized, checksum
 
 
   def get(self, title):
