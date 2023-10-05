@@ -7,6 +7,7 @@ from cryptography.hazmat.backends import default_backend
 class PrivNotes:
   MAX_NOTE_LEN = 2048
   NONCE_COUNTER = 2**64 #8 bytes hehe
+  
 
   def __init__(self, password, data = None, checksum = None):
     """Constructor.
@@ -48,7 +49,15 @@ class PrivNotes:
     """
     #data is going to have to be signature||kvs
     #might have to pad sig to standard length?
-    return pickle.dumps(self.kvs).hex(), ''
+    result = tuple(self.salt, self.signature, self.kvs)
+    serialized = pickle.dumps(result).hex()
+
+    hmac_checksum = hmac.HMAC(self.key, hashes.SHA256())
+    hmac_checksum.update(bytes(serialized, "ascii"))
+    checksum = hmac_checksum.finalize()
+
+    return serialized,checksum
+
 
   def get(self, title):
     """Fetches the note associated with a title.
