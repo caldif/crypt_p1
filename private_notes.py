@@ -25,7 +25,11 @@ class PrivNotes:
     self.kvs= {}
     if data is not None:
       #going to have to slice data? depends on how structure dump
-      self.kvs = pickle.loads(bytes.fromhex(data))
+      data_tuple = pickle.loads(bytes.fromhex(data))
+      self.salt, self.signature, self.kvs = data_tuple
+      print(self.salt)
+      print(self.signature)
+      print(self.kvs)
     else:
 
       self.salt = os.urandom(16)
