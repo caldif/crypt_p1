@@ -5,7 +5,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.backends import default_backend
 
 class PrivNotes:
-  MAX_NOTE_LEN = 2048
+  MAX_NOTE_LEN = 2048 
   NONCE_COUNTER = 2**64 #8 bytes hehe
   
 
@@ -170,7 +170,7 @@ class PrivNotes:
     # e_length = l.finalize()
     #append nonce to the end 
     l = AESGCM(new_key_length)
-    padded_length = str(len(note)).rjust(4, "0")
+    padded_length = str(len(note)).rjust(5, "0")
     e_length = l.encrypt(nonce=bytes(str(self.NONCE_COUNTER), "ascii"), data=bytes(padded_length, "ascii"), associated_data=None) 
     e_length = e_length
     length_nonce = self.NONCE_COUNTER
